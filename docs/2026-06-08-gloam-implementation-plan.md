@@ -889,6 +889,61 @@ Expected: pushes all commits to `origin/main` on https://github.com/KiraFR/Gloam
 
 ---
 
+## Task 8: GitHub Actions CI
+
+**Files:**
+- Create: `.github/workflows/ci.yml`
+
+Runs on `windows-latest` because the app targets `net8.0-windows` (WinForms) and cannot build on Linux.
+
+- [ ] **Step 1: Add the workflow**
+
+Create `.github/workflows/ci.yml`:
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release --verbosity normal
+```
+
+- [ ] **Step 2: Commit and push**
+
+```powershell
+git add .github/workflows/ci.yml
+git commit -m "ci: add GitHub Actions build + test on windows-latest"
+git push
+```
+
+- [ ] **Step 3: Verify the run is green**
+
+On https://github.com/KiraFR/Gloam/actions confirm the latest CI run passes (build + 11 tests).
+
+---
+
 ## Self-Review (completed)
 
 - **Spec coverage:** switch app+system theme (Task 3), fixed configurable times (Task 2 + SettingsForm Task 5), tray menu Auto/Light/Dark/Settings/Quit (Task 6), catch-up on launch (TrayApp `ApplyForNow`), JSON config at `%AppData%\Gloam` (Task 2), autostart toggle (Task 4 + Task 6), no wallpaper / no admin / no scheduled task (by construction), single instance (Task 6), equal-times rejected (Task 5), flash-free native mechanism (Task 3). All covered.
