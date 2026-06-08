@@ -62,7 +62,17 @@ public sealed class TrayApp : ApplicationContext
 
     private void ApplyMode(ThemeMode mode)
     {
-        ThemeSwitcher.Apply(mode);
+        try
+        {
+            ThemeSwitcher.Apply(mode);
+        }
+        catch (Exception ex)
+        {
+            _icon.ShowBalloonTip(5000, "Gloam",
+                $"Could not change the theme: {ex.Message}", ToolTipIcon.Warning);
+            return;
+        }
+
         _applied = mode;
         UpdateUi();
     }
