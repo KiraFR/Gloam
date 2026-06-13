@@ -11,6 +11,22 @@ public static class Schedule
     public static ThemeMode ModeFor(TimeOnly now, TimeOnly darkTime, TimeOnly lightTime)
         => InDarkWindow(now, darkTime, lightTime) ? ThemeMode.Dark : ThemeMode.Light;
 
+    /// <summary>
+    /// Resolves the effective dark/light times. In Sun mode with both sun times
+    /// present, dark = sunset and light = sunrise; otherwise the fixed times are
+    /// used (also the graceful fallback for polar days with no sun event).
+    /// </summary>
+    public static (TimeOnly Dark, TimeOnly Light) EffectiveTimes(
+        ScheduleMode mode,
+        TimeOnly fixedDark, TimeOnly fixedLight,
+        TimeOnly? sunriseLocal, TimeOnly? sunsetLocal)
+    {
+        if (mode == ScheduleMode.Sun && sunriseLocal is { } sunrise && sunsetLocal is { } sunset)
+            return (sunset, sunrise);
+
+        return (fixedDark, fixedLight);
+    }
+
     private static bool InDarkWindow(TimeOnly now, TimeOnly darkTime, TimeOnly lightTime)
     {
         if (darkTime <= lightTime)
