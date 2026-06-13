@@ -12,6 +12,8 @@ public sealed class TrayApp : ApplicationContext
     private readonly ToolStripMenuItem _lightItem;
     private readonly ToolStripMenuItem _darkItem;
     private readonly ToolStripMenuItem _startupItem;
+    private readonly ToolStripMenuItem _updateItem;
+    private readonly Updater _updater;
     private readonly Config _config;
     private ThemeMode _applied;
     private IntPtr _hIcon = IntPtr.Zero;
@@ -27,9 +29,15 @@ public sealed class TrayApp : ApplicationContext
         var settingsItem = new ToolStripMenuItem("Settings…", null, (_, _) => OpenSettings());
         var quitItem = new ToolStripMenuItem("Quit", null, (_, _) => Quit());
 
+        _updateItem = new ToolStripMenuItem("Restart to update", null, (_, _) => _updater!.ApplyAndRestart())
+        {
+            Visible = false
+        };
+
         var menu = new ContextMenuStrip();
         menu.Items.AddRange(new ToolStripItem[]
         {
+            _updateItem,
             _autoItem, _lightItem, _darkItem,
             new ToolStripSeparator(),
             _startupItem,
@@ -47,6 +55,25 @@ public sealed class TrayApp : ApplicationContext
         _timer.Start();
 
         ApplyForNow(); // catch-up on launch
+
+        _updater = new Updater(version =>
+        {
+            _updateItem.Text = $"Restart to update {version}";
+            _updateItem.Visible = true;
+            _icon.ShowBalloonTip(5000, "Gloam",
+                $"Update {version} downloaded — open the tray menu to restart.", ToolTipIcon.Info);
+        });
+
+        // Check for updates a few seconds after launch, once the message loop is
+        // running so the callback marshals back to the UI thread.
+        var updateCheck = new System.Windows.Forms.Timer { Interval = 3000 };
+        updateCheck.Tick += (_, _) =>
+        {
+            updateCheck.Stop();
+            updateCheck.Dispose();
+            _ = _updater.CheckAsync();
+        };
+        updateCheck.Start();
     }
 
     private (TimeOnly Dark, TimeOnly Light) EffectiveTimes(DateOnly date)
