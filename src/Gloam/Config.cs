@@ -8,6 +8,9 @@ public sealed class Config
     public TimeOnly LightTime { get; set; } = new(7, 0);
     public bool Auto { get; set; } = true;
     public bool RunAtStartup { get; set; } = true;
+    public ScheduleMode Mode { get; set; } = ScheduleMode.Fixed;
+    public double Latitude { get; set; } = 48.8566;   // Paris
+    public double Longitude { get; set; } = 2.3522;   // Paris
 
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
