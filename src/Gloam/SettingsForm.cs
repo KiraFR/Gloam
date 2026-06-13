@@ -10,15 +10,15 @@ public sealed class SettingsForm : Form
     private readonly RadioButton _sunRadio = new() { Text = "Sunrise / sunset", AutoSize = true };
 
     private readonly DateTimePicker _darkPicker =
-        new() { Format = DateTimePickerFormat.Time, ShowUpDown = true, Width = 90 };
+        new() { Format = DateTimePickerFormat.Time, ShowUpDown = true, Width = 110 };
     private readonly DateTimePicker _lightPicker =
-        new() { Format = DateTimePickerFormat.Time, ShowUpDown = true, Width = 90 };
+        new() { Format = DateTimePickerFormat.Time, ShowUpDown = true, Width = 110 };
 
     private readonly NumericUpDown _latInput =
-        new() { Minimum = -90, Maximum = 90, DecimalPlaces = 4, Increment = 0.1m, Width = 90 };
+        new() { Minimum = -90, Maximum = 90, DecimalPlaces = 4, Increment = 0.1m, Width = 110 };
     private readonly NumericUpDown _lonInput =
-        new() { Minimum = -180, Maximum = 180, DecimalPlaces = 4, Increment = 0.1m, Width = 90 };
-    private readonly TextBox _cityInput = new() { Width = 150 };
+        new() { Minimum = -180, Maximum = 180, DecimalPlaces = 4, Increment = 0.1m, Width = 110 };
+    private readonly TextBox _cityInput = new() { Width = 220 };
     private readonly Label _preview = new() { AutoSize = true, ForeColor = SystemColors.GrayText };
 
     private readonly CheckBox _startupCheck = new() { Text = "Start with Windows", AutoSize = true };
@@ -43,7 +43,9 @@ public sealed class SettingsForm : Form
         AutoScaleMode = AutoScaleMode.Dpi;
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        Padding = new Padding(12);
+        Font = new Font("Segoe UI", 10F);
+        Padding = new Padding(20);
+        MinimumSize = new Size(460, 0); // comfortable width floor; height auto-sizes
         try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { /* no icon */ }
 
         var today = DateTime.Today;
