@@ -8,6 +8,16 @@ It only flips the two Windows theme registry values and broadcasts the standard
 `WM_SETTINGCHANGE` message (exactly what Windows does in Settings). No wallpaper
 change, no admin rights.
 
+## Install
+
+Download the latest **`Gloam-win-Setup.exe`** from the
+[Releases page](https://github.com/KiraFR/Gloam/releases) and run it. It installs
+per-user (no admin) and pulls in the .NET 8 Desktop Runtime if you don't have it.
+
+Gloam updates itself: when a new release is published it downloads in the
+background and the tray menu shows **Restart to update** — click it whenever you
+like.
+
 ## Build & run
 
 ```powershell
