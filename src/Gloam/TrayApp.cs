@@ -11,6 +11,7 @@ public sealed class TrayApp : ApplicationContext
     private readonly ToolStripMenuItem _autoItem;
     private readonly ToolStripMenuItem _lightItem;
     private readonly ToolStripMenuItem _darkItem;
+    private readonly ToolStripMenuItem _startupItem;
     private readonly Config _config;
     private ThemeMode _applied;
     private IntPtr _hIcon = IntPtr.Zero;
@@ -22,6 +23,7 @@ public sealed class TrayApp : ApplicationContext
         _autoItem = new ToolStripMenuItem("Auto", null, (_, _) => SetAuto());
         _lightItem = new ToolStripMenuItem("Light", null, (_, _) => SetManual(ThemeMode.Light));
         _darkItem = new ToolStripMenuItem("Dark", null, (_, _) => SetManual(ThemeMode.Dark));
+        _startupItem = new ToolStripMenuItem("Start with Windows", null, (_, _) => ToggleStartup());
         var settingsItem = new ToolStripMenuItem("Settings…", null, (_, _) => OpenSettings());
         var quitItem = new ToolStripMenuItem("Quit", null, (_, _) => Quit());
 
@@ -30,10 +32,13 @@ public sealed class TrayApp : ApplicationContext
         {
             _autoItem, _lightItem, _darkItem,
             new ToolStripSeparator(),
+            _startupItem,
+            new ToolStripSeparator(),
             settingsItem,
             new ToolStripSeparator(),
             quitItem
         });
+        menu.Opening += (_, _) => _startupItem.Checked = Startup.IsEnabled();
 
         _icon = new NotifyIcon { Visible = true, ContextMenuStrip = menu, Text = "Gloam" };
 
@@ -44,19 +49,38 @@ public sealed class TrayApp : ApplicationContext
         ApplyForNow(); // catch-up on launch
     }
 
+    private (TimeOnly Dark, TimeOnly Light) EffectiveTimes(DateOnly date)
+    {
+        TimeOnly? sunrise = null, sunset = null;
+        if (_config.Mode == ScheduleMode.Sun)
+        {
+            var sun = SunCalculator.SunTimesUtc(date, _config.Latitude, _config.Longitude);
+            if (sun is { } v)
+            {
+                sunrise = TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(v.SunriseUtc, TimeZoneInfo.Local));
+                sunset = TimeOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(v.SunsetUtc, TimeZoneInfo.Local));
+            }
+        }
+        return Schedule.EffectiveTimes(_config.Mode, _config.DarkTime, _config.LightTime, sunrise, sunset);
+    }
+
+    private ThemeMode DesiredNow()
+    {
+        var now = DateTime.Now;
+        var (dark, light) = EffectiveTimes(DateOnly.FromDateTime(now));
+        return Schedule.ModeFor(TimeOnly.FromDateTime(now), dark, light);
+    }
+
     private void Tick()
     {
         if (!_config.Auto) return;
-        var desired = Schedule.ModeFor(
-            TimeOnly.FromDateTime(DateTime.Now), _config.DarkTime, _config.LightTime);
+        var desired = DesiredNow();
         if (desired != _applied) ApplyMode(desired);
     }
 
     private void ApplyForNow()
     {
-        var mode = _config.Auto
-            ? Schedule.ModeFor(TimeOnly.FromDateTime(DateTime.Now), _config.DarkTime, _config.LightTime)
-            : ThemeSwitcher.GetCurrent();
+        var mode = _config.Auto ? DesiredNow() : ThemeSwitcher.GetCurrent();
         ApplyMode(mode);
     }
 
@@ -91,13 +115,25 @@ public sealed class TrayApp : ApplicationContext
         ApplyMode(mode);
     }
 
+    private void ToggleStartup()
+    {
+        if (Startup.IsEnabled()) Startup.Disable();
+        else Startup.Enable(Application.ExecutablePath);
+
+        _config.RunAtStartup = Startup.IsEnabled();
+        _config.Save(Config.DefaultPath);
+    }
+
     private void OpenSettings()
     {
         using var form = new SettingsForm(_config);
         if (form.ShowDialog() != DialogResult.OK) return;
 
+        _config.Mode = form.Mode;
         _config.DarkTime = form.DarkTime;
         _config.LightTime = form.LightTime;
+        _config.Latitude = form.Latitude;
+        _config.Longitude = form.Longitude;
         _config.RunAtStartup = form.RunAtStartup;
         _config.Save(Config.DefaultPath);
 
